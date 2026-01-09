@@ -1,6 +1,7 @@
+// src/components/CasesSection.tsx
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, ImageIcon, Zap, Target, BarChart } from "lucide-react";
 import { motion, useInView } from "framer-motion";
@@ -11,7 +12,13 @@ export function CasesSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
   const { theme } = useTheme();
-  const isDark = theme === "dark";
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted ? theme === "dark" : true;
 
   const containerVariants = {
     hidden: { opacity: 0 },

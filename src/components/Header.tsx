@@ -12,8 +12,14 @@ import Image from "next/image";
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
-  const isDark = theme === "dark";
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted ? theme === "dark" : true;
 
   useEffect(() => {
     const handleScroll = () => {

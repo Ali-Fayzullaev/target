@@ -10,11 +10,12 @@ import { useEffect, useState } from "react";
 export function HeroSection() {
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
-  const isDark = theme === "dark";
 
   useEffect(() => setMounted(true), []);
 
   if (!mounted) return null;
+
+  const isDark = theme === "dark";
 
   return (
     <section id="#" className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-24 md:py-32">

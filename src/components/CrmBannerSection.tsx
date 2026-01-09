@@ -234,7 +234,7 @@ export function CrmBannerSection() {
                     🔥 АКЦИЯ ОГРАНИЧЕНА ПО ВРЕМЕНИ
                   </p>
                   <div className="flex justify-center gap-2">
-                    {['14', '23', '59'].map((time, index) => (
+                    {['14'].map((time, index) => (
                       <div key={index} className="text-center">
                         <div className={`text-xl font-bold ${
                           isDark ? 'text-white' : 'text-gray-900'
@@ -244,7 +244,7 @@ export function CrmBannerSection() {
                         <div className={`text-xs ${
                           isDark ? 'text-gray-400' : 'text-gray-500'
                         }`}>
-                          {['дней', 'часов', 'минут'][index]}
+                          {['дней'][index]}
                         </div>
                       </div>
                     ))}
