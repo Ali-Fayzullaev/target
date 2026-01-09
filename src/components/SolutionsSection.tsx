@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { CheckCircle, Target, Zap, TrendingUp, BarChart, Shield, ArrowRight } from "lucide-react";
+import { CheckCircle, Target, Zap, TrendingUp, BarChart, Shield, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, useInView } from "framer-motion";
 import { SOLUTIONS_CONTENT } from "@/lib/content";
 import { useTheme } from "next-themes";
@@ -23,9 +23,18 @@ export function SolutionsSection() {
   const isInView = useInView(sectionRef, { once: true, margin: "-50px" });
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const isDark = mounted ? theme === "dark" : true;
@@ -55,6 +64,16 @@ export function SolutionsSection() {
 
   const icons = [BarChart, Target, Zap, TrendingUp, Shield];
 
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % SOLUTIONS_CONTENT.items.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => 
+      prev === 0 ? SOLUTIONS_CONTENT.items.length - 1 : prev - 1
+    );
+  };
+
   return (
     <section
       id="services"
@@ -71,7 +90,7 @@ export function SolutionsSection() {
           ? 'bg-[radial-gradient(circle_at_50%_-20%,rgba(59,130,246,0.08),transparent_70%)]'
           : 'bg-[radial-gradient(circle_at_50%_-20%,rgba(59,130,246,0.05),transparent_70%)]'
       }`}>
-        {/* Сетка - используем CSS для простоты */}
+        {/* Сетка */}
         <div className={`absolute inset-0 opacity-[0.03] ${
           isDark ? 'bg-[linear-gradient(to_right,#333_1px,transparent_1px),linear-gradient(to_bottom,#333_1px,transparent_1px)]' 
           : 'bg-[linear-gradient(to_right,#ccc_1px,transparent_1px),linear-gradient(to_bottom,#ccc_1px,transparent_1px)]'
@@ -163,138 +182,133 @@ export function SolutionsSection() {
           </p>
         </motion.div>
 
-        {/* Карточки решений */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-        >
-          {SOLUTIONS_CONTENT.items.map((solution, index) => {
-            const Icon = icons[index] || CheckCircle;
-            
-            return (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                whileHover={{ 
-                  y: -10,
-                  transition: { duration: 0.3 }
-                }}
-                className="group relative"
-              >
-                {/* Фон с свечением */}
-                <div className={`absolute -inset-0.5 rounded-2xl blur-md opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${
-                  isDark
-                    ? 'bg-gradient-to-br from-blue-500/20 to-blue-600/10'
-                    : 'bg-gradient-to-br from-blue-400/20 to-blue-500/10'
-                }`} />
+        {/* Десктопная версия - сетка */}
+        <div className="hidden md:block">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate={isInView ? "visible" : "hidden"}
+            className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+          >
+            {SOLUTIONS_CONTENT.items.map((solution, index) => {
+              const Icon = icons[index] || CheckCircle;
+              
+              return (
+                <motion.div
+                  key={index}
+                  variants={itemVariants}
+                  whileHover={{ 
+                    y: -10,
+                    transition: { duration: 0.3 }
+                  }}
+                  className="group relative"
+                >
+                  <CardContent 
+                    solution={solution} 
+                    index={index} 
+                    Icon={Icon}
+                    isDark={isDark}
+                    isInView={isInView}
+                  />
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </div>
 
-                <div className={`relative overflow-hidden rounded-2xl border backdrop-blur-sm transition-all duration-500 group-hover:scale-[1.02] ${
-                  isDark
-                    ? 'bg-gradient-to-b from-gray-900/70 to-gray-900/40 border-blue-800/20 group-hover:border-blue-500/40'
-                    : 'bg-white/90 border-blue-200/50 group-hover:border-blue-300'
-                }`}>
-                  {/* Номер решения */}
-                  <div className={`absolute right-6 top-6 text-5xl font-black leading-none ${
-                    isDark ? 'text-blue-900/10' : 'text-blue-50'
-                  }`}>
-                    0{index + 1}
-                  </div>
-
-                  {/* Контент карточки */}
-                  <div className="relative z-10 p-6">
-                    {/* Иконка с анимацией */}
+        {/* Мобильная версия - карусель */}
+        <div className="md:hidden relative">
+          {/* Контейнер карусели */}
+          <div className="overflow-hidden">
+            <motion.div
+              animate={{ x: `-${currentSlide * 100}%` }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="flex"
+              style={{ width: `${SOLUTIONS_CONTENT.items.length * 100}%` }}
+            >
+              {SOLUTIONS_CONTENT.items.map((solution, index) => {
+                const Icon = icons[index] || CheckCircle;
+                
+                return (
+                  <div key={index} className="w-full flex-shrink-0 px-2">
                     <motion.div
-                      whileHover={{ rotate: 360, scale: 1.1 }}
-                      transition={{ duration: 0.5 }}
-                      className={`mb-6 inline-flex rounded-xl p-3 ${
-                        isDark
-                          ? 'bg-gradient-to-br from-blue-500/20 to-blue-600/10'
-                          : 'bg-gradient-to-br from-blue-100 to-blue-50'
-                      }`}
+                      variants={itemVariants}
+                      initial="hidden"
+                      animate={isInView ? "visible" : "hidden"}
+                      whileHover={{ scale: 1.02 }}
+                      className="group relative"
                     >
-                      <Icon className={`h-8 w-8 ${
-                        isDark ? 'text-blue-400' : 'text-blue-500'
-                      }`} />
-                    </motion.div>
-
-                    {/* Заголовок решения */}
-                    <h3 className={`mb-3 text-xl font-bold ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {solution.title}
-                    </h3>
-
-                    {/* Описание */}
-                    <p className={`mb-4 text-sm leading-relaxed ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      {solution.description}
-                    </p>
-
-                    {/* Детали */}
-                    <div className={`space-y-2 text-sm ${
-                      isDark ? 'text-blue-300/70' : 'text-blue-600/70'
-                    }`}>
-                      <div className="flex items-center gap-2">
-                        <div className={`h-2 w-2 rounded-full ${
-                          isDark ? 'bg-blue-400' : 'bg-blue-500'
-                        }`} />
-                        <span>Увеличивает конверсию до 3 раз</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className={`h-2 w-2 rounded-full ${
-                          isDark ? 'bg-blue-400' : 'bg-blue-500'
-                        }`} />
-                        <span>Сокращает стоимость лида на 40%</span>
-                      </div>
-                    </div>
-
-                    {/* Прогресс бар */}
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={isInView ? { width: "100%" } : {}}
-                      transition={{ delay: 0.3 + index * 0.1, duration: 1.5 }}
-                      className={`mt-6 h-1.5 rounded-full ${
-                        isDark
-                          ? 'bg-gradient-to-r from-blue-500/30 via-blue-500 to-blue-500/30'
-                          : 'bg-gradient-to-r from-blue-400/30 via-blue-500 to-blue-400/30'
-                      }`}
-                    >
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={isInView ? { width: `${70 + index * 5}%` } : {}}
-                        transition={{ delay: 0.8 + index * 0.1, duration: 1 }}
-                        className={`h-full rounded-full ${
-                          isDark
-                            ? 'bg-gradient-to-r from-blue-400 to-blue-300'
-                            : 'bg-gradient-to-r from-blue-500 to-blue-400'
-                        }`}
+                      <CardContent 
+                        solution={solution} 
+                        index={index} 
+                        Icon={Icon}
+                        isDark={isDark}
+                        isInView={isInView}
                       />
                     </motion.div>
                   </div>
+                );
+              })}
+            </motion.div>
+          </div>
 
-                  {/* Футер карточки */}
-                  <div className={`border-t px-6 py-4 ${
-                    isDark ? 'border-blue-900/30' : 'border-blue-100'
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-xs font-semibold tracking-wider ${
-                        isDark ? 'text-blue-300/70' : 'text-blue-600/70'
-                      }`}>
-                        РЕЗУЛЬТАТ ЧЕРЕЗ 14 ДНЕЙ
-                      </span>
-                      <ArrowRight className={`h-4 w-4 transition-transform group-hover:translate-x-2 ${
-                        isDark ? 'text-blue-400' : 'text-blue-500'
-                      }`} />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </motion.div>
+          {/* Навигация карусели */}
+          <div className="mt-8 flex items-center justify-center gap-4">
+            {/* Кнопка назад */}
+            <button
+              onClick={prevSlide}
+              className={`flex h-10 w-10 items-center justify-center rounded-full border ${
+                isDark
+                  ? 'border-blue-800/30 bg-gray-800/50 hover:bg-gray-800/70'
+                  : 'border-blue-200 bg-white/80 hover:bg-white'
+              }`}
+            >
+              <ChevronLeft className={`h-5 w-5 ${
+                isDark ? 'text-blue-400' : 'text-blue-500'
+              }`} />
+            </button>
+
+            {/* Индикаторы */}
+            <div className="flex gap-2">
+              {SOLUTIONS_CONTENT.items.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    currentSlide === index
+                      ? isDark
+                        ? 'w-8 bg-blue-500'
+                        : 'w-8 bg-blue-600'
+                      : isDark
+                        ? 'w-2 bg-gray-700'
+                        : 'w-2 bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Кнопка вперед */}
+            <button
+              onClick={nextSlide}
+              className={`flex h-10 w-10 items-center justify-center rounded-full border ${
+                isDark
+                  ? 'border-blue-800/30 bg-gray-800/50 hover:bg-gray-800/70'
+                  : 'border-blue-200 bg-white/80 hover:bg-white'
+              }`}
+            >
+              <ChevronRight className={`h-5 w-5 ${
+                isDark ? 'text-blue-400' : 'text-blue-500'
+              }`} />
+            </button>
+          </div>
+
+          {/* Подпись под каруселью */}
+          <p className={`mt-4 text-center text-sm ${
+            isDark ? 'text-gray-400' : 'text-gray-500'
+          }`}>
+            {currentSlide + 1} из {SOLUTIONS_CONTENT.items.length}
+          </p>
+        </div>
 
         {/* Футер секции */}
         <motion.div
@@ -343,5 +357,124 @@ export function SolutionsSection() {
         isDark ? 'bg-blue-800/10' : 'bg-blue-300/20'
       }`} />
     </section>
+  );
+}
+
+// Вынесенный компонент карточки для переиспользования
+function CardContent({ 
+  solution, 
+  index, 
+  Icon, 
+  isDark, 
+  isInView 
+}: { 
+  solution: { title: string; description: string }; 
+  index: number; 
+  Icon: React.ComponentType<{ className?: string }>;
+  isDark: boolean;
+  isInView: boolean;
+}) {
+  return (
+    <div className={`relative overflow-hidden rounded-2xl border backdrop-blur-sm transition-all duration-500 group-hover:scale-[1.02] ${
+      isDark
+        ? 'bg-gradient-to-b from-gray-900/70 to-gray-900/40 border-blue-800/20 group-hover:border-blue-500/40'
+        : 'bg-white/90 border-blue-200/50 group-hover:border-blue-300'
+    }`}>
+      {/* Номер решения */}
+      <div className={`absolute right-6 top-6 text-5xl font-black leading-none ${
+        isDark ? 'text-blue-900/10' : 'text-blue-50'
+      }`}>
+        0{index + 1}
+      </div>
+
+      {/* Контент карточки */}
+      <div className="relative z-10 p-6">
+        {/* Иконка с анимацией */}
+        <motion.div
+          whileHover={{ rotate: 360, scale: 1.1 }}
+          transition={{ duration: 0.5 }}
+          className={`mb-6 inline-flex rounded-xl p-3 ${
+            isDark
+              ? 'bg-gradient-to-br from-blue-500/20 to-blue-600/10'
+              : 'bg-gradient-to-br from-blue-100 to-blue-50'
+          }`}
+        >
+          <Icon className={`h-8 w-8 ${
+            isDark ? 'text-blue-400' : 'text-blue-500'
+          }`} />
+        </motion.div>
+
+        {/* Заголовок решения */}
+        <h3 className={`mb-3 text-xl font-bold ${
+          isDark ? 'text-white' : 'text-gray-900'
+        }`}>
+          {solution.title}
+        </h3>
+
+        {/* Описание */}
+        <p className={`mb-4 text-sm leading-relaxed ${
+          isDark ? 'text-gray-400' : 'text-gray-600'
+        }`}>
+          {solution.description}
+        </p>
+
+        {/* Детали */}
+        <div className={`space-y-2 text-sm ${
+          isDark ? 'text-blue-300/70' : 'text-blue-600/70'
+        }`}>
+          <div className="flex items-center gap-2">
+            <div className={`h-2 w-2 rounded-full ${
+              isDark ? 'bg-blue-400' : 'bg-blue-500'
+            }`} />
+            <span>Увеличивает конверсию до 3 раз</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`h-2 w-2 rounded-full ${
+              isDark ? 'bg-blue-400' : 'bg-blue-500'
+            }`} />
+            <span>Сокращает стоимость лида на 40%</span>
+          </div>
+        </div>
+
+        {/* Прогресс бар */}
+        <motion.div
+          initial={{ width: 0 }}
+          animate={isInView ? { width: "100%" } : {}}
+          transition={{ delay: 0.3 + index * 0.1, duration: 1.5 }}
+          className={`mt-6 h-1.5 rounded-full ${
+            isDark
+              ? 'bg-gradient-to-r from-blue-500/30 via-blue-500 to-blue-500/30'
+              : 'bg-gradient-to-r from-blue-400/30 via-blue-500 to-blue-400/30'
+          }`}
+        >
+          <motion.div
+            initial={{ width: 0 }}
+            animate={isInView ? { width: `${70 + index * 5}%` } : {}}
+            transition={{ delay: 0.8 + index * 0.1, duration: 1 }}
+            className={`h-full rounded-full ${
+              isDark
+                ? 'bg-gradient-to-r from-blue-400 to-blue-300'
+                : 'bg-gradient-to-r from-blue-500 to-blue-400'
+            }`}
+          />
+        </motion.div>
+      </div>
+
+      {/* Футер карточки */}
+      <div className={`border-t px-6 py-4 ${
+        isDark ? 'border-blue-900/30' : 'border-blue-100'
+      }`}>
+        <div className="flex items-center justify-between">
+          <span className={`text-xs font-semibold tracking-wider ${
+            isDark ? 'text-blue-300/70' : 'text-blue-600/70'
+          }`}>
+            РЕЗУЛЬТАТ ЧЕРЕЗ 14 ДНЕЙ
+          </span>
+          <ArrowRight className={`h-4 w-4 transition-transform group-hover:translate-x-2 ${
+            isDark ? 'text-blue-400' : 'text-blue-500'
+          }`} />
+        </div>
+      </div>
+    </div>
   );
 }
