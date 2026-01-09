@@ -1,10 +1,19 @@
+// src/components/PainPointsSection.tsx
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { AlertCircle, ArrowRight, Target, Zap, TrendingDown, BarChart, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertCircle, ArrowRight, Target, Zap, TrendingDown, BarChart } from "lucide-react";
 import { motion, useInView } from "framer-motion";
 import { PAIN_POINTS_CONTENT } from "@/lib/content";
 import { useTheme } from "next-themes";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 
 // Фиксированные позиции частиц для избежания hydration mismatch
 const PARTICLE_POSITIONS = [
@@ -30,19 +39,24 @@ export function PainPointsSection() {
   const isInView = useInView(sectionRef, { once: true, margin: "-50px" });
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
     setMounted(true);
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (!api) return;
+
+    setCount(api.scrollSnapList().length);
+    setCurrent(api.selectedScrollSnap());
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
 
   const isDark = mounted ? theme === "dark" : true;
 
@@ -70,16 +84,6 @@ export function PainPointsSection() {
   };
 
   const icons = [TrendingDown, BarChart, Zap, Target];
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % PAIN_POINTS_CONTENT.items.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => 
-      prev === 0 ? PAIN_POINTS_CONTENT.items.length - 1 : prev - 1
-    );
-  };
 
   return (
     <section
@@ -213,26 +217,26 @@ export function PainPointsSection() {
           </motion.div>
         </div>
 
-        {/* Мобильная версия - карусель */}
+        {/* Мобильная версия - карусель shadcn */}
         <div className="md:hidden relative">
-          {/* Контейнер карусели */}
-          <div className="overflow-hidden">
-            <motion.div
-              animate={{ x: `-${currentSlide * 100}%` }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="flex"
-              style={{ width: `${PAIN_POINTS_CONTENT.items.length * 100}%` }}
-            >
+          <Carousel
+            setApi={setApi}
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-2">
               {PAIN_POINTS_CONTENT.items.map((point, index) => {
                 const Icon = icons[index];
                 
                 return (
-                  <div key={index} className="w-full flex-shrink-0 px-2">
+                  <CarouselItem key={index} className="pl-2">
                     <motion.div
                       variants={itemVariants}
                       initial="hidden"
                       animate={isInView ? "visible" : "hidden"}
-                      whileHover={{ scale: 1.02 }}
                       className="group relative"
                     >
                       <CardContent 
@@ -243,68 +247,56 @@ export function PainPointsSection() {
                         isInView={isInView}
                       />
                     </motion.div>
-                  </div>
+                  </CarouselItem>
                 );
               })}
-            </motion.div>
-          </div>
-
-          {/* Навигация карусели */}
-          <div className="mt-8 flex items-center justify-center gap-4">
-            {/* Кнопка назад */}
-            <button
-              onClick={prevSlide}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border ${
-                isDark
-                  ? 'border-red-800/30 bg-gray-800/50 hover:bg-gray-800/70'
-                  : 'border-red-200 bg-white/80 hover:bg-white'
-              }`}
-            >
-              <ChevronLeft className={`h-5 w-5 ${
-                isDark ? 'text-red-400' : 'text-red-500'
-              }`} />
-            </button>
-
-            {/* Индикаторы */}
-            <div className="flex gap-2">
-              {PAIN_POINTS_CONTENT.items.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    currentSlide === index
-                      ? isDark
-                        ? 'w-8 bg-red-500'
-                        : 'w-8 bg-red-600'
-                      : isDark
-                        ? 'w-2 bg-gray-700'
-                        : 'w-2 bg-gray-300'
-                  }`}
-                />
-              ))}
+            </CarouselContent>
+            
+            {/* Навигация карусели */}
+            <div className="mt-6 flex items-center justify-center gap-4">
+              <CarouselPrevious 
+                className={`static translate-y-0 h-10 w-10 rounded-full border ${
+                  isDark
+                    ? 'border-red-800/30 bg-gray-800/50 hover:bg-gray-800/70 text-red-400'
+                    : 'border-red-200 bg-white/80 hover:bg-white text-red-500'
+                }`}
+              />
+              
+              {/* Индикаторы */}
+              <div className="flex gap-2">
+                {Array.from({ length: count }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => api?.scrollTo(index)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      current === index
+                        ? isDark
+                          ? 'w-8 bg-red-500'
+                          : 'w-8 bg-red-600'
+                        : isDark
+                          ? 'w-2 bg-gray-700'
+                          : 'w-2 bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+              
+              <CarouselNext 
+                className={`static translate-y-0 h-10 w-10 rounded-full border ${
+                  isDark
+                    ? 'border-red-800/30 bg-gray-800/50 hover:bg-gray-800/70 text-red-400'
+                    : 'border-red-200 bg-white/80 hover:bg-white text-red-500'
+                }`}
+              />
             </div>
-
-            {/* Кнопка вперед */}
-            <button
-              onClick={nextSlide}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border ${
-                isDark
-                  ? 'border-red-800/30 bg-gray-800/50 hover:bg-gray-800/70'
-                  : 'border-red-200 bg-white/80 hover:bg-white'
-              }`}
-            >
-              <ChevronRight className={`h-5 w-5 ${
-                isDark ? 'text-red-400' : 'text-red-500'
-              }`} />
-            </button>
-          </div>
-
-          {/* Подпись под каруселью */}
-          <p className={`mt-4 text-center text-sm ${
-            isDark ? 'text-gray-400' : 'text-gray-500'
-          }`}>
-            {currentSlide + 1} из {PAIN_POINTS_CONTENT.items.length}
-          </p>
+            
+            {/* Подпись под каруселью */}
+            <p className={`mt-4 text-center text-sm ${
+              isDark ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              {current + 1} из {count}
+            </p>
+          </Carousel>
         </div>
 
         {/* Футер секции */}
